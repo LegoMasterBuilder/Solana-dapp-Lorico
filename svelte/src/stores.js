@@ -1,42 +1,25 @@
-// @ts-nocheck
-import { writable } from "svelte/store";
-import { ethers } from "ethers";
+import { writable } from 'svelte/store';
+import { Connection, clusterApiUrl } from '@solana/web3.js';
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { WalletProvider } from '@solana/wallet-adapter-react';
 
-// Store for the provider, signer, and account
-export const provider = writable(null);
-export const signer = writable(null);
+export const connection = writable(null);
+export const wallet = writable(null);
 export const account = writable(null);
-export const daoContract = writable(null);
 
-// Contract ABI and address
-const contractAddress = "YOUR_CONTRACT_ADDRESS";
-const contractAbi = [
-  // ABI of your DAO contract
-];
-
-// Function to connect to the wallet
 export async function connectWallet() {
-  if (window.ethereum) {
-    try {
-      await window.ethereum.request({ method: "eth_requestAccounts" });
-      const ethersProvider = new ethers.providers.Web3Provider(window.ethereum);
-      const ethersSigner = ethersProvider.getSigner();
-      const userAccount = await ethersSigner.getAddress();
+    const network = WalletAdapterNetwork.Devnet;
+    const endpoint = clusterApiUrl(network);
 
-      provider.set(ethersProvider);
-      signer.set(ethersSigner);
-      account.set(userAccount);
+    const conn = new Connection(endpoint, 'confirmed');
+    connection.set(conn);
 
-      const contract = new ethers.Contract(
-        contractAddress,
-        contractAbi,
-        ethersSigner,
-      );
-      daoContract.set(contract);
-    } catch (error) {
-      console.error("Error connecting wallet:", error);
-    }
-  } else {
-    console.error("MetaMask not found");
-  }
+    const walletAdapter = new PhantomWalletAdapter();
+    await walletAdapter.connect();
+
+    wallet.set(walletAdapter);
+
+    const pubkey = walletAdapter.publicKey.toString();
+    account.set(pubkey);
 }

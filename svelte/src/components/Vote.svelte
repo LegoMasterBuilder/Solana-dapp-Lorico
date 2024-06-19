@@ -1,25 +1,34 @@
 <script>
 // @ts-nocheck
 
-    import { daoContract } from '../stores';
-    let contract;
-    daoContract.subscribe(value => {
-        contract = value;
-    });
-
+    import { connection, account } from '../stores';
+    let conn;
+    let userAccount;
     let proposalId;
     let vote; // true for yes, false for no
 
+    connection.subscribe(value => {
+        conn = value;
+    });
+
+    account.subscribe(value => {
+        userAccount = value;
+    });
+
     const castVote = async () => {
-        if (contract) {
-            try {
-                const tx = await contract.vote(proposalId, vote);
-                await tx.wait();
-                alert('Vote cast successfully');
-            } catch (error) {
-                console.error("Error casting vote:", error);
-                alert('Error casting vote');
-            }
+        if (conn && userAccount) {
+            const transaction = new Transaction().add(
+                SystemProgram.createAccount({
+                    fromPubkey: userAccount,
+                    newAccountPubkey: new PublicKey("VOTE_ACCOUNT_PUBLIC_KEY"),
+                    lamports: await conn.getMinimumBalanceForRentExemption(0),
+                    space: 0,
+                    programId: new PublicKey("YOUR_PROGRAM_ID"),
+                })
+            );
+            const signature = await conn.sendTransaction(transaction, [userAccount]);
+            await conn.confirmTransaction(signature, 'processed');
+            alert('Vote cast successfully');
         }
     };
 </script>

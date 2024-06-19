@@ -1,7 +1,7 @@
 <script>
 // @ts-nocheck
 
-    import { account, connectWallet } from '../stores';
+    import { account, connectToSolana } from '../stores';
     let userAccount;
 
     account.subscribe(value => {
@@ -9,7 +9,7 @@
     });
 
     const connect = () => {
-        connectWallet();
+        connectToSolana();
     };
 </script>
 

@@ -1,26 +1,35 @@
 <script>
 // @ts-nocheck
 
-    import { daoContract } from '../stores';
-    import { ethers } from 'ethers';
-    let contract;
-    daoContract.subscribe(value => {
-        contract = value;
-    });
-
+    import { connection, account } from '../stores';
+    import { PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
+    let conn;
+    let userAccount;
     let title = '';
     let description = '';
 
+    connection.subscribe(value => {
+        conn = value;
+    });
+
+    account.subscribe(value => {
+        userAccount = value;
+    });
+
     const createProposal = async () => {
-        if (contract) {
-            try {
-                const tx = await contract.createProposal(title, description);
-                await tx.wait();
-                alert('Proposal created successfully');
-            } catch (error) {
-                console.error("Error creating proposal:", error);
-                alert('Error creating proposal');
-            }
+        if (conn && userAccount) {
+            const transaction = new Transaction().add(
+                SystemProgram.createAccount({
+                    fromPubkey: userAccount,
+                    newAccountPubkey: new PublicKey("PROPOSAL_ACCOUNT_PUBLIC_KEY"),
+                    lamports: await conn.getMinimumBalanceForRentExemption(0),
+                    space: 0,
+                    programId: new PublicKey("YOUR_PROGRAM_ID"),
+                })
+            );
+            const signature = await conn.sendTransaction(transaction, [userAccount]);
+            await conn.confirmTransaction(signature, 'processed');
+            alert('Proposal created successfully');
         }
     };
 </script>
